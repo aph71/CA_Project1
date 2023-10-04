@@ -1,3 +1,16 @@
+/*******  TO DO    *******/
+/* 1-MOVR function with check for bits
+   2-Command line execution
+```3-2's Complement function/process is incorrect. Needs to check for leading 1 and only
+	perform 2's complement function if the leading bit is a 1. Otherwise perform normal binary conversion
+```4-Formatting is incorrect, on display and write. Should follow example output. See example code in Lecture 6 slides
+   5-Complete missing instructions (SUBI, ADDI, LDUR, STUR)
+   6-Test cases need to be generated
+   7-Code could be cleaned up and optimized considerably. Several areas like the "write and print" commands
+     are redundant and could probably be made more efficient. Struct should probably be used for function variables,
+	pointers could reduce the number of copies etc..
+*/
+
 package main
 
 import (
@@ -20,7 +33,11 @@ import (
 
 func twosComplement(binaryStr string) (int, error) {
 	var negFlag bool //Check for leading one (negative number)
-	if binaryStr[0:1] == "1" {
+	if binaryStr[0:1] != "1" {
+		negFlag = false
+		result2, err := binaryToInteger(binaryStr)
+		return result2, err
+	} else {
 		negFlag = true
 	}
 	inverted := ""
@@ -86,6 +103,19 @@ func binaryToInteger(binary string) (int, error) {
 /***************    ALPHABETICALLY    ********************/
 /*********************************************************/
 
+/*****************ADD IMMEDIATE FUNCTION*********************/
+/*func addImmediate(binaryInstruction string, lineNumber int) {
+	instructionType := binaryInstruction[0:11]
+	immediateValue := binaryInstruction[11:22]
+	registrySource := binaryInstruction[22:27]
+	registryDest := binaryInstruction[27:32]
+	immediateValueInt, err := twosComplement(immediateValue)
+	if error == nil {
+		fmt.Println("Error:", err)
+	}
+
+}
+*/
 /*****************ADD FUNCTION*********************/
 func addInstruction(binaryInstruction string, lineNumber int) {
 	firstSource := binaryInstruction[11:16]
@@ -106,8 +136,11 @@ func addInstruction(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-		"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
+	fmt.Printf("%s %5s %.6s %.5s %.5s \n",
+		firstSource, binaryInstruction, firstSource, firstSource, firstSource)
+	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
+	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
+	*/
 	// binaryInstruction = ""    Maybe not needed now
 
 	instructionType := binaryInstruction[0:11]
