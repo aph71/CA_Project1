@@ -206,10 +206,26 @@ func conditionalBranchNz(binaryInstruction string, lineNumber int) {
 	branchOffset := binaryInstruction[8:27]
 	bRegistry := binaryInstruction[27:32]
 	branchOffsetInt, err := twosComplement(branchOffset)
+	bRegistryInt, err := binaryToInteger(bRegistry)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Println(instructionType, branchOffset, bRegistry, lineNumber, "CBNZ", "#", branchOffsetInt)
+	fmt.Println(instructionType, branchOffset, bRegistry, lineNumber, "CBNZ", "R", bRegistryInt, "#", branchOffsetInt)
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%s %s %s %d CBZ R%d #%d \n",
+		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		return
+	}
 }
 
 /*******************CONDITIONAL BRANCH ZERO**********************/
@@ -217,11 +233,27 @@ func conditionalBranch(binaryInstruction string, lineNumber int) {
 	instructionType := binaryInstruction[0:8]
 	branchOffset := binaryInstruction[8:27]
 	bRegistry := binaryInstruction[27:32]
+	bRegistryInt, err := binaryToInteger(bRegistry)
 	branchOffsetInt, err := twosComplement(branchOffset)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Println(instructionType, branchOffset, bRegistry, lineNumber, "CBZ", "#", branchOffsetInt)
+	fmt.Println(instructionType, branchOffset, bRegistry, lineNumber, "CBZ", "R", bRegistryInt, "#", branchOffsetInt)
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%s %s %s %d CBNZ R%d #%d \n",
+		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		return
+	}
 }
 
 /*****************ORR FUNCTION*********************/
