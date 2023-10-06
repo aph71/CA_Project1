@@ -5,8 +5,9 @@
 	perform 2's complement function if the leading bit is a 1. Otherwise perform normal binary conversion
 ```4-Formatting is incorrect, on display and write. Should follow example output. See example code in Lecture 6 slides
    5-Complete missing instructions (SUBI, ADDI, LDUR, STUR)
-   6-Test cases need to be generated
-   7-Code could be cleaned up and optimized considerably. Several areas like the "write and print" commands
+   6-Make use of flags so input/write aren't hardcoded
+   7-Test cases need to be generated
+   8-Code could be cleaned up and optimized considerably. Several areas like the "write and print" commands
      are redundant and could probably be made more efficient. Struct should probably be used for function variables,
 	pointers could reduce the number of copies etc..
 */
@@ -136,8 +137,11 @@ func addInstruction(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Printf("%s %5s %.6s %.5s %.5s \n",
-		firstSource, binaryInstruction, firstSource, firstSource, firstSource)
+	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d  ADD R%.1d, R%.1d, R%.1d \n",
+		binaryInstruction[0:11], firstSource, binaryInstruction[16:22], secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, secondSourceint)
+	//fmt.Printf("%s %5s %.6s %.5s %.5s \n",
+	//firstSource, binaryInstruction, firstSource, firstSource, firstSource)
 	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
 	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	*/
@@ -184,8 +188,11 @@ func andInstruction(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-		"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
+	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d AND R%.1d, R%.1d, R%.1d \n",
+		binaryInstruction[0:11], firstSource, binaryInstruction[16:22], secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, secondSourceint)
+	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
+	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	// binaryInstruction = ""    Maybe not needed now
 	instructionType := binaryInstruction[0:11]
 	valueShamt := binaryInstruction[16:22]
@@ -215,7 +222,10 @@ func branchInstruction(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Println(instructionType, bOffset, lineNumber, "B", "#", bOffsetInt)
+	fmt.Printf("%.6s %.26s\t%.1d B   #%d \n",
+		instructionType, bOffset, lineNumber, bOffsetInt)
+
+	//fmt.Println(instructionType, bOffset, lineNumber, "B", "#", bOffsetInt)
 	// ***WRITING TO FILE***
 	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
@@ -309,11 +319,17 @@ func orrInstruction(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-		"\t", destinationReg, lineNumber, "ORR ", " R", destInt, "R", firstSourceint, "R", secondSourceint)
-	// binaryInstruction = ""    Maybe not needed now
 	instructionType := binaryInstruction[0:11]
 	valueShamt := binaryInstruction[16:22]
+	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR R%.1d, R%.1d, R%.1d \n",
+		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, secondSourceint)
+	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
+	//	"\t", destinationReg, lineNumber, "ORR ", " R", destInt, "R", firstSourceint, "R", secondSourceint)
+	// binaryInstruction = ""    Maybe not needed now
+	// fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR  R%.1d, R%.1d, R%.1d \n",
+	//	instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+//		destInt, firstSourceint, secondSourceint)
 	// ***WRITING TO FILE***
 	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
@@ -353,8 +369,11 @@ func subInstruction(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Println(instructionType, "\t", firstSource, "\t", valueShamt, secondSource,
-		"\t", destinationReg, lineNumber, "SUB \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
+	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d SUB R%.1d, R%.1d, R%.1d \n",
+		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, secondSourceint)
+	//fmt.Println(instructionType, "\t", firstSource, "\t", valueShamt, secondSource,
+	//	"\t", destinationReg, lineNumber, "SUB \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	// binaryInstruction = ""    Maybe not needed now
 
 	// ***WRITING TO FILE***
