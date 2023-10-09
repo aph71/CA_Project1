@@ -349,6 +349,110 @@ func conditionalBranch(binaryInstruction string, lineNumber int) {
 	}
 }
 
+/******************LSL FUNCTION********************/
+func logicalLeftInstruction(binaryInstruction string, lineNumber int) {
+	instructionType := binaryInstruction[0:11]
+	firstSource := binaryInstruction[22:27]
+	secondSource := binaryInstruction[11:16]
+	destinationReg := binaryInstruction[27:32]
+	valueShamt := binaryInstruction[16:22]
+	// Reg One Int Conversion
+	firstSourceint, err := binaryToInteger(firstSource)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Two Int Conversion
+	shamtInt, err := binaryToInteger(valueShamt)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Three Int Conversion
+	destInt, err := binaryToInteger(destinationReg)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSL R%.1d, R%.1d, #%.1d \n",
+		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, shamtInt)
+	//fmt.Printf("%s %5s %.6s %.5s %.5s \n",
+	//firstSource, binaryInstruction, firstSource, firstSource, firstSource)
+	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
+	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
+	*/
+	// binaryInstruction = ""    Maybe not needed now
+
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSL R%.1d, R%.1d, #%.1d \n",
+		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, shamtInt)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
+
+}
+
+/******************LSR FUNCTION********************/
+func logicalRightInstruction(binaryInstruction string, lineNumber int) {
+	instructionType := binaryInstruction[0:11]
+	firstSource := binaryInstruction[22:27]
+	secondSource := binaryInstruction[11:16]
+	destinationReg := binaryInstruction[27:32]
+	valueShamt := binaryInstruction[16:22]
+	// Reg One Int Conversion
+	firstSourceint, err := binaryToInteger(firstSource)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Two Int Conversion
+	shamtInt, err := binaryToInteger(valueShamt)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Three Int Conversion
+	destInt, err := binaryToInteger(destinationReg)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSR R%.1d, R%.1d, #%.1d \n",
+		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, shamtInt)
+	//fmt.Printf("%s %5s %.6s %.5s %.5s \n",
+	//firstSource, binaryInstruction, firstSource, firstSource, firstSource)
+	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
+	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
+	*/
+	// binaryInstruction = ""    Maybe not needed now
+
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSR R%.1d, R%.1d, #%.1d \n",
+		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, shamtInt)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
+
+}
+
 /*****************ORR FUNCTION*********************/
 func orrInstruction(binaryInstruction string, lineNumber int) {
 	firstSource := binaryInstruction[11:16]
@@ -537,9 +641,9 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int) {
 					case "11010011100":
 						println("ASR")
 					case "11010011011":
-						println("LSL")
+						logicalLeftInstruction(binaryInstruction, lineNumber)
 					case "11010011010":
-						println("LSR")
+						logicalRightInstruction(binaryInstruction, lineNumber)
 					default:
 						calc, err := twosComplement(binaryInstruction)
 						if err != nil {
