@@ -1,10 +1,11 @@
 /*******  TO DO    *******/
 /* 1-MOVR function with check for bits
    2-Command line execution
-```3-2's Complement function/process is incorrect. Needs to check for leading 1 and only
+```3-2's Complement function/process is incorrect. Needs to check for leading 1 and only *COMPLETED*
 	perform 2's complement function if the leading bit is a 1. Otherwise perform normal binary conversion
 ```4-Formatting is incorrect, on display and write. Should follow example output. See example code in Lecture 6 slides
-   5-Complete missing instructions (SUBI, ADDI, LDUR, STUR)
+   5-Break case needs to be added
+	- Check that integers are being converted properly according to context (2's C vs Binary convert)
    6-Make use of flags so input/write aren't hardcoded
    7-Test cases need to be generated
    8-Code could be cleaned up and optimized considerably. Several areas like the "write and print" commands
@@ -96,6 +97,7 @@ func binaryToInteger(binary string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	// println(result)
 	return int(result), nil
 }
 
@@ -198,6 +200,7 @@ func addiInstruction(binaryInstruction string, lineNumber int) {
 	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
 	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	// binaryInstruction = ""    Maybe not needed now
+
 	// ***WRITING TO FILE***
 	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
@@ -451,6 +454,50 @@ func eorInstruction(binaryInstruction string, lineNumber int) {
 	}
 }
 
+/******************LDUR FUNCTION*******************/
+func ldurInstruction(binaryInstruction string, lineNumber int) {
+	offsetValue := binaryInstruction[11:20]
+	opCode2 := binaryInstruction[20:22]
+	instructionType := binaryInstruction[0:11]
+	baseRegistryRn := binaryInstruction[22:27]
+	destinationRegRt := binaryInstruction[27:32]
+	// Reg One Int Conversion
+	baseRegistryRnint, err := binaryToInteger(baseRegistryRn)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Two Int Conversion
+	destinationRegRtint, err := binaryToInteger(destinationRegRt)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	offsetValueInt, err := binaryToInteger(offsetValue)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	fmt.Printf("%.11s %.9s %.2s %.5s %.5s \t%.1d LDUR R%.1d, [R%.1d, #%.1d] \n",
+		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
+		destinationRegRtint, baseRegistryRnint, offsetValueInt)
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d  LDUR R%.1d, [R%.1d, #%.1d] \n",
+		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
+		destinationRegRtint, baseRegistryRnint, offsetValueInt)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
+
+}
+
 /******************LSL FUNCTION********************/
 func logicalLeftInstruction(binaryInstruction string, lineNumber int) {
 	instructionType := binaryInstruction[0:11]
@@ -494,50 +541,6 @@ func logicalLeftInstruction(binaryInstruction string, lineNumber int) {
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSL R%.1d, R%.1d, #%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, shamtInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
-
-}
-
-/******************LDUR FUNCTION*******************/
-func ldurInstruction(binaryInstruction string, lineNumber int) {
-	offsetValue := binaryInstruction[11:20]
-	opCode2 := binaryInstruction[20:22]
-	instructionType := binaryInstruction[0:11]
-	baseRegistryRn := binaryInstruction[22:27]
-	destinationRegRt := binaryInstruction[27:32]
-	// Reg One Int Conversion
-	baseRegistryRnint, err := binaryToInteger(baseRegistryRn)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	destinationRegRtint, err := binaryToInteger(destinationRegRt)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	offsetValueInt, err := binaryToInteger(offsetValue)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.9s %.2s %.5s %.5s \t%.1d LDUR R%.1d, [R%.1d, #%.1d] \n",
-		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
-		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d  LDUR R%.1d, [R%.1d, #%.1d] \n",
-		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
-		destinationRegRtint, baseRegistryRnint, offsetValueInt)
 	_, err = file.WriteString(output)
 	if err != nil {
 		fmt.Println("Error writing to the file:", err)
@@ -596,7 +599,115 @@ func logicalRightInstruction(binaryInstruction string, lineNumber int) {
 		// file.Close()
 		return
 	}
+}
 
+/*****************MOVK FUNCTION********************/
+
+func movkInstruction(binaryInstruction string, lineNumber int) {
+	fieldValue := binaryInstruction[11:27]
+	opCode2 := binaryInstruction[9:11]
+	instructionType := binaryInstruction[0:9]
+	baseRegistry := binaryInstruction[27:32]
+	// Reg Int Conversion
+	baseRegistryint, err := binaryToInteger(baseRegistry)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Two Int Conversion
+	/*opcode2int, err := binaryToInteger(opCode2)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}*/
+	//Field Value Conversion
+	fieldValueInt, err := binaryToInteger(fieldValue)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	bitPattern := 0
+	if opCode2 == "00" {
+		bitPattern = 0
+	} else if opCode2 == "01" {
+		bitPattern = 16
+	} else if opCode2 == "10" {
+		bitPattern = 32
+	} else if opCode2 == "11" {
+		bitPattern = 48
+	}
+	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d \n",
+		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
+		baseRegistryint, fieldValueInt, bitPattern)
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d] \n",
+		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
+		baseRegistryint, fieldValueInt, bitPattern)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
+}
+
+/*****************MOVR FUNCTION********************/
+
+func movrInstruction(binaryInstruction string, lineNumber int) {
+	fieldValue := binaryInstruction[11:27]
+	opCode2 := binaryInstruction[9:11]
+	instructionType := binaryInstruction[0:9]
+	baseRegistry := binaryInstruction[27:32]
+	// Reg Int Conversion
+	baseRegistryint, err := binaryToInteger(baseRegistry)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Two Int Conversion
+	//opcode2int, err := binaryToInteger(opCode2)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	//Field Value Conversion
+	// var fieldValueInt uint32
+	fieldValueInt, err := binaryToInteger(fieldValue)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	bitPattern := 0
+	if opCode2 == "00" {
+		bitPattern = 0
+	} else if opCode2 == "01" {
+		bitPattern = 16
+	} else if opCode2 == "10" {
+		bitPattern = 32
+	} else if opCode2 == "11" {
+		bitPattern = 48
+	}
+	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVR R%.1d, %.1d, LSL %.1d \n",
+		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
+		baseRegistryint, fieldValueInt, bitPattern)
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d] \n",
+		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
+		baseRegistryint, fieldValueInt, bitPattern)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
 }
 
 /*****************ORR FUNCTION*********************/
@@ -805,9 +916,9 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int) {
 		default:
 			switch binaryInstruction[:9] {
 			case "110100101":
-				println("MOVK")
+				movrInstruction(binaryInstruction, lineNumber)
 			case "111100101":
-				println("MOVK")
+				movkInstruction(binaryInstruction, lineNumber)
 			default:
 				switch binaryInstruction[:10] {
 				case "1101000100":
@@ -829,7 +940,7 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int) {
 					case "11111000010":
 						ldurInstruction(binaryInstruction, lineNumber)
 					case "11101010000":
-						println("EOR")
+						eorInstruction(binaryInstruction, lineNumber)
 					case "11010011100":
 						arithShiftFunction(binaryInstruction, lineNumber)
 					case "11010011011":
