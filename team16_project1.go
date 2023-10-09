@@ -1,7 +1,6 @@
 /*******  TO DO    *******/
 /* 2-Command line execution - Alyssa
 
-
 ```4-2's Complement function/process is incorrect. Needs to check for leading 1 and only *COMPLETED*
 	perform 2's complement function if the leading bit is a 1. Other wise perform normal binary conversion
    5-Break case needs to be added
@@ -11,7 +10,8 @@
    8-Code could be cleaned up and optimized considerably. Several areas like the "write and print" commands
      are redundant and could probably be made more efficient. Struct should probably be used for function variables,
 	pointers could reduce the number of copies etc..
-	9-First and second source bits are inverted on some functions. Needs to be checked/fixed - Lucas
+ 9-First and second source bits are inverted on some functions. Needs to be checked/fixed - Lucas
+ 10- test cases - kissa
 */
 
 package main
