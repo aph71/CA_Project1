@@ -964,8 +964,15 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int) {
 /************   MAIN   ****************/
 
 func main() {
+	var fileInput string
+	//user inputs file
+	fmt.Print("Enter the input file: ")
+	_, err := fmt.Scan(&fileInput)
+	if err != nil {
+		return
+	}
 	// Open the input file
-	inputFile, err := os.Open("input.txt")
+	inputFile, err := os.Open(fileInput)
 	if err != nil {
 		fmt.Println("Error opening input file:", err)
 		return
