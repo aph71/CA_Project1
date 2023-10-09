@@ -169,6 +169,52 @@ func addInstruction(binaryInstruction string, lineNumber int) {
 
 }
 
+/***************ADDI FUN***********************/
+
+func addiInstruction(binaryInstruction string, lineNumber int) {
+	firstSource := binaryInstruction[22:27]
+	destinationReg := binaryInstruction[27:32]
+	instructionType := binaryInstruction[0:10]
+	immediateBinary := binaryInstruction[10:22]
+	// Reg One Int Conversion
+	firstSourceint, err := binaryToInteger(firstSource)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Two Int Conversion
+	immediateInt, err := binaryToInteger(immediateBinary)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	// Reg Three Int Conversion
+	destInt, err := binaryToInteger(destinationReg)
+	if err != nil {
+		fmt.Println("Error:", err)
+	}
+	fmt.Printf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
+		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
+		destInt, firstSourceint, immediateInt)
+	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
+	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
+	// binaryInstruction = ""    Maybe not needed now
+	// ***WRITING TO FILE***
+	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer file.Close()
+	// Write the text to the file
+	output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
+		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
+		destInt, firstSourceint, immediateInt)
+	_, err = file.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		return
+	}
+}
+
 /***************AND FUNCTION*******************/
 func andInstruction(binaryInstruction string, lineNumber int) {
 	firstSource := binaryInstruction[11:16]
@@ -425,7 +471,7 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int) {
 				case "1101000100":
 					println("SUBI")
 				case "1001000100":
-					println("ADDI")
+					addiInstruction(binaryInstruction, lineNumber)
 				default:
 					switch binaryInstruction[:11] {
 					case "10001011000":
