@@ -730,8 +730,9 @@ func subInstruction(binaryInstruction string, lineNumber int) {
 	}
 	defer file.Close()
 	// Write the text to the file
-	output := fmt.Sprintf("%s %s %s %s %s %d SUB R%d R%d R%d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber, destInt, firstSourceint, secondSourceint)
+	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d SUB R%.1d, R%.1d, R%.1d \n",
+		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
+		destInt, firstSourceint, secondSourceint)
 	_, err = file.WriteString(output)
 	if err != nil {
 		fmt.Println("Error writing to the file:", err)
@@ -776,7 +777,7 @@ func subiInstruction(binaryInstruction string, lineNumber int) {
 	}
 	defer file.Close()
 	// Write the text to the file
-	output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
+	output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d SUBI R%.1d, R%.1d, #%.1d \n",
 		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
 		destInt, firstSourceint, immediateInt)
 	_, err = file.WriteString(output)
