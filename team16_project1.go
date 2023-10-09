@@ -1,17 +1,17 @@
 /*******  TO DO    *******/
-/* 1-MOVR function with check for bits
-   2-Command line execution
-```3-2's Complement function/process is incorrect. Needs to check for leading 1 and only *COMPLETED*
-	perform 2's complement function if the leading bit is a 1. Otherwise perform normal binary conversion
-```4-Formatting is incorrect, on display and write. Should follow example output. See example code in Lecture 6 slides
+/* 2-Command line execution - Alyssa
+
+
+```4-2's Complement function/process is incorrect. Needs to check for leading 1 and only *COMPLETED*
+	perform 2's complement function if the leading bit is a 1. Other wise perform normal binary conversion
    5-Break case needs to be added
-	- Check that integers are being converted properly according to context (2's C vs Binary convert)
-   6-Make use of flags so input/write aren't hardcoded
-   7-Test cases need to be generated
+   6-Check that integers are being converted properly according to context (2's C vs Binary convert)
+   7-Make use of flags so input/write aren't hardcoded - Alyssa
+   7-Test cases need to be generated.
    8-Code could be cleaned up and optimized considerably. Several areas like the "write and print" commands
      are redundant and could probably be made more efficient. Struct should probably be used for function variables,
 	pointers could reduce the number of copies etc..
-	9-First and second source bits are inverted on some functions. Needs to be checked/fixed
+	9-First and second source bits are inverted on some functions. Needs to be checked/fixed - Lucas
 */
 
 package main
@@ -97,7 +97,6 @@ func binaryToInteger(binary string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	// println(result)
 	return int(result), nil
 }
 
@@ -122,8 +121,8 @@ func binaryToInteger(binary string) (int, error) {
 */
 /*****************ADD FUNCTION*********************/
 func addInstruction(binaryInstruction string, lineNumber int) {
-	firstSource := binaryInstruction[11:16]
 	instructionType := binaryInstruction[0:11]
+	firstSource := binaryInstruction[11:16]
 	valueShamt := binaryInstruction[16:22]
 	// Reg One Int Conversion
 	firstSourceint, err := binaryToInteger(firstSource)
@@ -184,8 +183,8 @@ func addiInstruction(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	// Reg Two Int Conversion
-	immediateInt, err := binaryToInteger(immediateBinary)
+	// immediate value Int Conversion
+	immediateInt, err := twosComplement(immediateBinary)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
