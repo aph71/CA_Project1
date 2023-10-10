@@ -583,7 +583,7 @@ func movrInstruction(binaryInstruction string, lineNumber int, outputFile *strin
 	} else if opCode2 == "11" {
 		bitPattern = 48
 	}
-	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVR R%.1d, %.1d, LSL %.1d \n",
+	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVR R%.1d, %.1d, LSL %.1d",
 		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
 		baseRegistryint, fieldValueInt, bitPattern)
 
