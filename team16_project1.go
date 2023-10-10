@@ -18,6 +18,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -102,6 +103,31 @@ func binaryToInteger(binary string) (int, error) {
 
 /*********************************************************/
 /*********************************************************/
+/*********      WRITE TO FILE FUNCTION      **************/
+/*********************************************************/
+/*********************************************************/
+func writeToFile(outputFile string, output string) {
+	writeOutputFile, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(writeOutputFile)
+	_, err = writeOutputFile.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
+}
+
+/*********************************************************/
+/*********************************************************/
 /*******      INSTRUCTION-TYPE FUNCTIONS      ************/
 /***************    ALPHABETICALLY    ********************/
 /*********************************************************/
@@ -120,7 +146,7 @@ func binaryToInteger(binary string) (int, error) {
 }
 */
 /*****************ADD FUNCTION*********************/
-func addInstruction(binaryInstruction string, lineNumber int) {
+func addInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	instructionType := binaryInstruction[0:11]
 	firstSource := binaryInstruction[11:16]
 	valueShamt := binaryInstruction[16:22]
@@ -151,29 +177,17 @@ func addInstruction(binaryInstruction string, lineNumber int) {
 	*/
 	// binaryInstruction = ""    Maybe not needed now
 
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  ADD R%.1d, R%.1d, R%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, secondSourceint)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
 
 }
 
 /***************ADDI FUNCTION***********************/
 
-func addiInstruction(binaryInstruction string, lineNumber int) {
+func addiInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	firstSource := binaryInstruction[22:27]
 	destinationReg := binaryInstruction[27:32]
 	instructionType := binaryInstruction[0:10]
@@ -200,26 +214,15 @@ func addiInstruction(binaryInstruction string, lineNumber int) {
 	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	// binaryInstruction = ""    Maybe not needed now
 
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
 	// Write the text to the file
 	output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
 		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
 		destInt, firstSourceint, immediateInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /***************AND FUNCTION*******************/
-func andInstruction(binaryInstruction string, lineNumber int) {
+func andInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	firstSource := binaryInstruction[11:16]
 	instructionType := binaryInstruction[0:11]
 	valueShamt := binaryInstruction[16:22]
@@ -246,27 +249,17 @@ func andInstruction(binaryInstruction string, lineNumber int) {
 	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
 	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	// binaryInstruction = ""    Maybe not needed now
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d AND R%.1d, R%.1d, R%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, secondSourceint)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 
 }
 
 /********************ASR FUNCTION******************************/
-func arithShiftFunction(binaryInstruction string, lineNumber int) {
+func arithShiftFunction(binaryInstruction string, lineNumber int, outputFile *string) {
 	instructionType := binaryInstruction[0:11]
 	firstSource := binaryInstruction[22:27]
 	secondSource := binaryInstruction[11:16]
@@ -297,28 +290,16 @@ func arithShiftFunction(binaryInstruction string, lineNumber int) {
 	*/
 	// binaryInstruction = ""    Maybe not needed now
 
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  ASR R%.1d, R%.1d, #%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, shamtInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
 
 }
 
 /********************BRANCH INSTRUCTION************************/
-func branchInstruction(binaryInstruction string, lineNumber int) {
+func branchInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	instructionType := binaryInstruction[0:6]
 	bOffset := binaryInstruction[6:32]
 	bOffsetInt, err := twosComplement(bOffset)
@@ -329,25 +310,15 @@ func branchInstruction(binaryInstruction string, lineNumber int) {
 		instructionType, bOffset, lineNumber, bOffsetInt)
 
 	//fmt.Println(instructionType, bOffset, lineNumber, "B", "#", bOffsetInt)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.6s %.26s\t%.1d B   #%d \n",
 		instructionType, bOffset, lineNumber, bOffsetInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /*******************CONDITIONAL BRANCH NZERO**********************/
-func conditionalBranchNz(binaryInstruction string, lineNumber int) {
+func conditionalBranchNz(binaryInstruction string, lineNumber int, outputFile *string) {
 	instructionType := binaryInstruction[0:8]
 	branchOffset := binaryInstruction[8:27]
 	bRegistry := binaryInstruction[27:32]
@@ -356,26 +327,17 @@ func conditionalBranchNz(binaryInstruction string, lineNumber int) {
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	fmt.Printf("%.8s %.19s %.5s\t%.1d  CBZN R%.1d #%.1d \n",
+	fmt.Printf("%.8s %.19s %.5s\t%.1d  CBNZ R%.1d #%.1d \n",
 		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt) // ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
-	output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBZN R%.1d #%.1d \n",
+	output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBNZ R%.1d #%.1d \n",
 		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /*******************CONDITIONAL BRANCH ZERO**********************/
-func conditionalBranch(binaryInstruction string, lineNumber int) {
+func conditionalBranch(binaryInstruction string, lineNumber int, outputFile *string) {
 	instructionType := binaryInstruction[0:8]
 	branchOffset := binaryInstruction[8:27]
 	bRegistry := binaryInstruction[27:32]
@@ -387,25 +349,15 @@ func conditionalBranch(binaryInstruction string, lineNumber int) {
 	fmt.Printf("%.8s %.19s %.5s\t%.1d  CBZ R%.1d #%.1d \n",
 		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
 	// fmt.Println(instructionType, branchOffset, bRegistry, lineNumber, "CBZ", "R", bRegistryInt, "#", branchOffsetInt)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBZ R%.1d #%.1d \n",
 		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /*****************EOR FUNCTION*********************/
-func eorInstruction(binaryInstruction string, lineNumber int) {
+func eorInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	firstSource := binaryInstruction[22:27]
 	// Reg One Int Conversion
 	firstSourceint, err := binaryToInteger(firstSource)
@@ -435,26 +387,16 @@ func eorInstruction(binaryInstruction string, lineNumber int) {
 	// fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR  R%.1d, R%.1d, R%.1d \n",
 	//	instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 	//		destInt, firstSourceint, secondSourceint)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR R%.1d, R%.1d, R%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, secondSourceint)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /******************LDUR FUNCTION*******************/
-func ldurInstruction(binaryInstruction string, lineNumber int) {
+func ldurInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	offsetValue := binaryInstruction[11:20]
 	opCode2 := binaryInstruction[20:22]
 	instructionType := binaryInstruction[0:11]
@@ -477,28 +419,17 @@ func ldurInstruction(binaryInstruction string, lineNumber int) {
 	fmt.Printf("%.11s %.9s %.2s %.5s %.5s \t%.1d LDUR R%.1d, [R%.1d, #%.1d] \n",
 		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
 		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d  LDUR R%.1d, [R%.1d, #%.1d] \n",
 		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
 		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
 
 }
 
 /******************LSL FUNCTION********************/
-func logicalLeftInstruction(binaryInstruction string, lineNumber int) {
+func logicalLeftInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	instructionType := binaryInstruction[0:11]
 	firstSource := binaryInstruction[22:27]
 	secondSource := binaryInstruction[11:16]
@@ -529,28 +460,16 @@ func logicalLeftInstruction(binaryInstruction string, lineNumber int) {
 	*/
 	// binaryInstruction = ""    Maybe not needed now
 
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSL R%.1d, R%.1d, #%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, shamtInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
 
 }
 
 /******************LSR FUNCTION********************/
-func logicalRightInstruction(binaryInstruction string, lineNumber int) {
+func logicalRightInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	instructionType := binaryInstruction[0:11]
 	firstSource := binaryInstruction[22:27]
 	secondSource := binaryInstruction[11:16]
@@ -581,28 +500,16 @@ func logicalRightInstruction(binaryInstruction string, lineNumber int) {
 	*/
 	// binaryInstruction = ""    Maybe not needed now
 
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSR R%.1d, R%.1d, #%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, shamtInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /*****************MOVK FUNCTION********************/
 
-func movkInstruction(binaryInstruction string, lineNumber int) {
+func movkInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	fieldValue := binaryInstruction[11:27]
 	opCode2 := binaryInstruction[9:11]
 	instructionType := binaryInstruction[0:9]
@@ -635,28 +542,17 @@ func movkInstruction(binaryInstruction string, lineNumber int) {
 	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d \n",
 		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
 		baseRegistryint, fieldValueInt, bitPattern)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d] \n",
 		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
 		baseRegistryint, fieldValueInt, bitPattern)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /*****************MOVR FUNCTION********************/
 
-func movrInstruction(binaryInstruction string, lineNumber int) {
+func movrInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	fieldValue := binaryInstruction[11:27]
 	opCode2 := binaryInstruction[9:11]
 	instructionType := binaryInstruction[0:9]
@@ -690,27 +586,17 @@ func movrInstruction(binaryInstruction string, lineNumber int) {
 	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVR R%.1d, %.1d, LSL %.1d \n",
 		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
 		baseRegistryint, fieldValueInt, bitPattern)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d] \n",
 		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
 		baseRegistryint, fieldValueInt, bitPattern)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
+
 }
 
 /*****************ORR FUNCTION*********************/
-func orrInstruction(binaryInstruction string, lineNumber int) {
+func orrInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	firstSource := binaryInstruction[11:16]
 	// Reg One Int Conversion
 	firstSourceint, err := binaryToInteger(firstSource)
@@ -740,27 +626,17 @@ func orrInstruction(binaryInstruction string, lineNumber int) {
 	// fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR  R%.1d, R%.1d, R%.1d \n",
 	//	instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 	//		destInt, firstSourceint, secondSourceint)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR R%.1d, R%.1d, R%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, secondSourceint)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /*****************STUR FUNCTION****************/
 
-func sturInstruction(binaryInstruction string, lineNumber int) {
+func sturInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	offsetValue := binaryInstruction[11:20]
 	opCode2 := binaryInstruction[20:22]
 	instructionType := binaryInstruction[0:11]
@@ -783,28 +659,17 @@ func sturInstruction(binaryInstruction string, lineNumber int) {
 	fmt.Printf("%.11s %.9s %.2s %.5s %.5s \t%.1d STUR R%.1d, [R%.1d, #%.1d] \n",
 		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
 		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d  LDUR R%.1d, [R%.1d, #%.1d] \n",
 		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
 		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
+	writeToFile(*outputFile, output)
 
 }
 
 /******************SUB FUNCTION****************/
-func subInstruction(binaryInstruction string, lineNumber int) {
+func subInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	firstSource := binaryInstruction[11:16]
 	// Reg One Int Conversion
 	firstSourceint, err := binaryToInteger(firstSource)
@@ -832,28 +697,17 @@ func subInstruction(binaryInstruction string, lineNumber int) {
 	//	"\t", destinationReg, lineNumber, "SUB \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	// binaryInstruction = ""    Maybe not needed now
 
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
 	// Write the text to the file
 	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d SUB R%.1d, R%.1d, R%.1d \n",
 		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
 		destInt, firstSourceint, secondSourceint)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 
 }
 
 /******************SUBI FUNCTION********************/
 
-func subiInstruction(binaryInstruction string, lineNumber int) {
+func subiInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
 	firstSource := binaryInstruction[22:27]
 	destinationReg := binaryInstruction[27:32]
 	instructionType := binaryInstruction[0:10]
@@ -879,73 +733,63 @@ func subiInstruction(binaryInstruction string, lineNumber int) {
 	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
 	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
 	// binaryInstruction = ""    Maybe not needed now
-	// ***WRITING TO FILE***
-	file, err := os.OpenFile("team16_out_dis.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer file.Close()
+
 	// Write the text to the file
 	output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d SUBI R%.1d, R%.1d, #%.1d \n",
 		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
 		destInt, firstSourceint, immediateInt)
-	_, err = file.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		return
-	}
+	writeToFile(*outputFile, output)
 }
 
 /*******************************************************************/
 /***********PRIMARY FUNCTION TO READ IN INSTRUCTIONS***************/
 /******************************************************************/
 
-func readAndProcessInstructions(binaryInstruction string, lineNumber int) {
+func readAndProcessInstructions(binaryInstruction string, lineNumber int, outputFile *string) {
 	// Check if it matches any known instruction type
 	switch binaryInstruction[:6] {
 	case "000101":
-		branchInstruction(binaryInstruction, lineNumber)
+		branchInstruction(binaryInstruction, lineNumber, outputFile)
 	default:
 		switch binaryInstruction[:8] {
 		case "10110100":
-			conditionalBranch(binaryInstruction, lineNumber)
+			conditionalBranch(binaryInstruction, lineNumber, outputFile)
 		case "10110101":
-			conditionalBranchNz(binaryInstruction, lineNumber)
+			conditionalBranchNz(binaryInstruction, lineNumber, outputFile)
 		default:
 			switch binaryInstruction[:9] {
 			case "110100101":
-				movrInstruction(binaryInstruction, lineNumber)
+				movrInstruction(binaryInstruction, lineNumber, outputFile)
 			case "111100101":
-				movkInstruction(binaryInstruction, lineNumber)
+				movkInstruction(binaryInstruction, lineNumber, outputFile)
 			default:
 				switch binaryInstruction[:10] {
 				case "1101000100":
-					subiInstruction(binaryInstruction, lineNumber)
+					subiInstruction(binaryInstruction, lineNumber, outputFile)
 				case "1001000100":
-					addiInstruction(binaryInstruction, lineNumber)
+					addiInstruction(binaryInstruction, lineNumber, outputFile)
 				default:
 					switch binaryInstruction[:11] {
 					case "10001011000":
-						addInstruction(binaryInstruction, lineNumber)
+						addInstruction(binaryInstruction, lineNumber, outputFile)
 					case "10001010000":
-						andInstruction(binaryInstruction, lineNumber)
+						andInstruction(binaryInstruction, lineNumber, outputFile)
 					case "10101010000":
-						orrInstruction(binaryInstruction, lineNumber)
+						orrInstruction(binaryInstruction, lineNumber, outputFile)
 					case "11001011000":
-						subInstruction(binaryInstruction, lineNumber)
+						subInstruction(binaryInstruction, lineNumber, outputFile)
 					case "11111000000":
-						sturInstruction(binaryInstruction, lineNumber)
+						sturInstruction(binaryInstruction, lineNumber, outputFile)
 					case "11111000010":
-						ldurInstruction(binaryInstruction, lineNumber)
+						ldurInstruction(binaryInstruction, lineNumber, outputFile)
 					case "11101010000":
-						eorInstruction(binaryInstruction, lineNumber)
+						eorInstruction(binaryInstruction, lineNumber, outputFile)
 					case "11010011100":
-						arithShiftFunction(binaryInstruction, lineNumber)
+						arithShiftFunction(binaryInstruction, lineNumber, outputFile)
 					case "11010011011":
-						logicalLeftInstruction(binaryInstruction, lineNumber)
+						logicalLeftInstruction(binaryInstruction, lineNumber, outputFile)
 					case "11010011010":
-						logicalRightInstruction(binaryInstruction, lineNumber)
+						logicalRightInstruction(binaryInstruction, lineNumber, outputFile)
 					default:
 						calc, err := twosComplement(binaryInstruction)
 						if err != nil {
@@ -963,16 +807,29 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int) {
 /************   MAIN   ****************/
 
 func main() {
-	// Open the input file
-	inputFile, err := os.Open("input.txt")
+	// String flag with default value "input.txt"
+	inputFile := flag.String("i", "input.txt", "Enter input file")
+
+	// String flag with default value "team16_out_dis.txt"
+	outputFile := flag.String("o", "team16_out_dis.txt", "Enter desired name for the output file")
+
+	// Enable command-line parsing
+	flag.Parse()
+
+	openInputFile, err := os.Open(*inputFile)
 	if err != nil {
 		fmt.Println("Error opening input file:", err)
 		return
 	}
-	defer inputFile.Close()
+	defer func(inputFile *os.File) {
+		err := inputFile.Close()
+		if err != nil {
+
+		}
+	}(openInputFile)
 
 	// Create a reader to read from the input file
-	reader := bufio.NewReader(inputFile)
+	reader := bufio.NewReader(openInputFile)
 	lineNumber := 96
 	for {
 		// Create a new buffer for each loop
@@ -1006,7 +863,7 @@ func main() {
 		}
 		// Convert  to string
 		binaryInstruction := string(buffer[:bytesRead])
-		readAndProcessInstructions(binaryInstruction, lineNumber)
+		readAndProcessInstructions(binaryInstruction, lineNumber, outputFile)
 		lineNumber += 4
 	}
 
