@@ -1,18 +1,4 @@
 /*******  TO DO    *******/
-/* 2-Command line execution - Alyssa
-
-```4-2's Complement function/process is incorrect. Needs to check for leading 1 and only *COMPLETED*
-	perform 2's complement function if the leading bit is a 1. Other wise perform normal binary conversion
-   5-Break case needs to be added
-   6-Check that integers are being converted properly according to context (2's C vs Binary convert)
-   7-Make use of flags so input/write aren't hardcoded - Alyssa
-   7-Test cases need to be generated.
-   8-Code could be cleaned up and optimized considerably. Several areas like the "write and print" commands
-     are redundant and could probably be made more efficient. Struct should probably be used for function variables,
-	pointers could reduce the number of copies etc..
- 9-First and second source bits are inverted on some functions. Needs to be checked/fixed - Lucas
- 10- test cases - kissa
-*/
 
 package main
 
@@ -26,6 +12,450 @@ import (
 	"strings"
 	"unicode"
 )
+
+/***********************************************************************/
+/*****************************B TYPE INSTRUCTIONS***********************/
+/***********************************************************************/
+
+type BranchInstruction struct {
+	Opcode     string
+	OffsetStr  string
+	OffsetInt  int
+	LineNumber int
+}
+
+func NewBranchInstruction(opcode string, offsetStr string, offsetInt int, lineNumber int) *BranchInstruction {
+	return &BranchInstruction{
+		Opcode:     opcode,
+		OffsetStr:  offsetStr,
+		OffsetInt:  offsetInt,
+		LineNumber: lineNumber,
+	}
+}
+
+func parseBranchInstruction(binaryInstruction string, lineNumber int) *BranchInstruction {
+	opcode := binaryInstruction[:6]
+	offsetStr := binaryInstruction[6:32]
+	offsetInt, _ := twosComplement(offsetStr)
+	return NewBranchInstruction(opcode, offsetStr, offsetInt, lineNumber)
+}
+
+/***********************************************************************/
+/*****************************CB TYPE INSTRUCTIONS***********************/
+/***********************************************************************/
+
+type cBranchInstruction struct {
+	Opcode      string
+	OffsetStr   string
+	RegistryStr string
+	RegistryInt int
+	OffsetInt   int
+	LineNumber  int
+}
+
+func NewcBranchInstruction(opcode string, offsetStr string, registryStr string,
+	registryInt int, offsetInt int, lineNumber int) *cBranchInstruction {
+	return &cBranchInstruction{
+		Opcode:      opcode,
+		OffsetStr:   offsetStr,
+		RegistryStr: registryStr,
+		RegistryInt: registryInt,
+		OffsetInt:   offsetInt,
+		LineNumber:  lineNumber,
+	}
+}
+
+func parsecBranchInstruction(binaryInstruction string, lineNumber int) *cBranchInstruction {
+	opcode := binaryInstruction[:8]
+	offsetStr := binaryInstruction[8:27]
+	registryStr := binaryInstruction[27:32]
+	registryInt, _ := strconv.ParseInt(registryStr, 2, 32)
+	offsetInt, _ := twosComplement(offsetStr)
+	return NewcBranchInstruction(opcode, offsetStr, registryStr, int(registryInt), offsetInt, lineNumber)
+}
+
+/***********************************************************************/
+/*****************************IM TYPE INSTRUCTIONS***********************/
+/***********************************************************************/
+type imTypeInstruction struct {
+	Opcode      string
+	FieldValue  string
+	DestStr     string
+	Op2         string
+	Destination int
+	LineNumber  int
+	FieldInt    uint
+	BitPattern  int
+}
+
+func NewImTypeInstruction(opcode string, op2 string, destStr string, fieldValue string,
+	bitPattern int, dest int, fieldInt uint, lineNumber int) *imTypeInstruction {
+	return &imTypeInstruction{
+		Opcode:      opcode,
+		Op2:         op2,
+		Destination: dest,
+		FieldInt:    fieldInt,
+		LineNumber:  lineNumber,
+		FieldValue:  fieldValue,
+		DestStr:     destStr,
+		BitPattern:  bitPattern,
+	}
+}
+
+func parseImTypeInstruction(binaryInstruction string, lineNumber int) *imTypeInstruction {
+	opcode := binaryInstruction[:9]
+	op2 := binaryInstruction[9:11]
+	fieldValue := binaryInstruction[11:27]
+	destStr := binaryInstruction[27:32]
+	dest, _ := strconv.ParseInt(destStr, 2, 32)
+	fieldInt, _ := strconv.ParseInt(fieldValue, 2, 32)
+	bitPattern := 0
+	if op2 == "00" {
+		bitPattern = 0
+	} else if op2 == "01" {
+		bitPattern = 16
+	} else if op2 == "10" {
+		bitPattern = 32
+	} else if op2 == "11" {
+		bitPattern = 48
+	}
+	return NewImTypeInstruction(opcode, op2, destStr, fieldValue, bitPattern, int(dest), uint(fieldInt), lineNumber)
+}
+
+/***********************************************************************/
+/*****************************I TYPE INSTRUCTIONS***********************/
+/***********************************************************************/
+type iTypeInstruction struct {
+	Opcode      string
+	Immediate   string
+	Src1Str     string
+	DestStr     string
+	Destination int
+	Source1     int
+	LineNumber  int
+	ImmedInt    int
+}
+
+func NewITypeInstruction(opcode string, immediate string,
+	src1Str string, destStr string, dest int, src1 int, immedInt int, lineNumber int) *iTypeInstruction {
+	return &iTypeInstruction{
+		Opcode:      opcode,
+		Destination: dest,
+		Source1:     src1,
+		ImmedInt:    immedInt,
+		LineNumber:  lineNumber,
+		Immediate:   immediate,
+		Src1Str:     src1Str,
+		DestStr:     destStr,
+	}
+}
+
+func parseITypeInstruction(binaryInstruction string, lineNumber int) *iTypeInstruction {
+	opcode := binaryInstruction[:10]
+	immediate := binaryInstruction[10:22]
+	src1Str := binaryInstruction[22:27]
+	destStr := binaryInstruction[27:32]
+	dest, _ := strconv.ParseInt(destStr, 2, 32)
+	src1, _ := strconv.ParseInt(src1Str, 2, 32)
+	immedInt, _ := twosComplement(immediate)
+	return NewITypeInstruction(opcode, immediate, src1Str, destStr, int(dest), int(src1), int(immedInt), lineNumber)
+}
+
+/***********************************************************************/
+/*****************************R TYPE INSTRUCTIONS***********************/
+/***********************************************************************/
+type rTypeInstruction struct {
+	Opcode      string
+	Destination int
+	Source1     int
+	Source2     int
+	LineNumber  int
+	ShamtInt    int
+	Shamt       string
+	Src2Str     string
+	Src1Str     string
+	DestStr     string
+}
+
+func NewrTypeInstruction(opcode string, shamt string, src2Str string,
+	src1Str string, destStr string, dest int, src1 int, src2 int, shamtInt int, lineNumber int) *rTypeInstruction {
+	return &rTypeInstruction{
+		Opcode:      opcode,
+		Destination: dest,
+		Source1:     src1,
+		Source2:     src2,
+		ShamtInt:    shamtInt,
+		LineNumber:  lineNumber,
+		Shamt:       shamt,
+		Src2Str:     src2Str,
+		Src1Str:     src1Str,
+		DestStr:     destStr,
+	}
+}
+
+func parserTypeInstruction(binaryInstruction string, lineNumber int) *rTypeInstruction {
+	opcode := binaryInstruction[:11]
+	src2Str := binaryInstruction[11:16]
+	shamt := binaryInstruction[16:22]
+	src1Str := binaryInstruction[22:27]
+	destStr := binaryInstruction[27:32]
+	dest, _ := strconv.ParseInt(destStr, 2, 32)
+	src1, _ := strconv.ParseInt(src1Str, 2, 32)
+	src2, _ := strconv.ParseInt(src2Str, 2, 32)
+	shamtInt, _ := strconv.ParseInt(shamt, 2, 32)
+	return NewrTypeInstruction(opcode, shamt, src2Str, src1Str, destStr, int(dest), int(src1), int(src2), int(shamtInt), lineNumber)
+}
+
+/*******************************************************************/
+/**************************D TYPE INSTRUCTIONS***********************/
+/*******************************************************************/
+type dTypeInstruction struct {
+	Opcode     string
+	AddressStr string
+	Op2        string
+	Src2Str    string
+	Src1Str    string
+	AddressInt int
+	Source1    int
+	Source2    int
+	LineNumber int
+}
+
+func NewDTypeInstruction(opcode string, addressStr string, op2 string,
+	src1Str string, src2Str string, addressInt int, src1 int, src2 int, lineNumber int) *dTypeInstruction {
+	return &dTypeInstruction{
+		Opcode:     opcode,
+		AddressStr: addressStr,
+		Source1:    src1,
+		Source2:    src2,
+		LineNumber: lineNumber,
+		Op2:        op2,
+		Src2Str:    src2Str,
+		Src1Str:    src1Str,
+		AddressInt: addressInt,
+	}
+}
+
+func parseDTypeInstruction(binaryInstruction string, lineNumber int) *dTypeInstruction {
+	opcode := binaryInstruction[0:11]
+	addressStr := binaryInstruction[11:20]
+	op2 := binaryInstruction[20:22]
+	src2Str := binaryInstruction[22:27]
+	src1Str := binaryInstruction[27:32]
+	addressInt, _ := strconv.ParseInt(addressStr, 2, 32)
+	src1, _ := strconv.ParseInt(src1Str, 2, 32)
+	src2, _ := strconv.ParseInt(src2Str, 2, 32)
+	return NewDTypeInstruction(opcode, addressStr, op2, src1Str, src2Str, int(addressInt), int(src1), int(src2), lineNumber)
+}
+
+/*********************************************************/
+/***********      WRITE       FUNCTIONS    ****************/
+/*********************************************************/
+func writeToFile(outputFile string, output string) {
+	writeOutputFile, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(writeOutputFile)
+	_, err = writeOutputFile.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
+}
+
+/*********************************************************/
+/*********************************************************/
+/***********      MAIN DRIVER FUNCTION   ****************/
+/*********************************************************/
+/*********************************************************/
+
+func readAndProcessInstructions(binaryInstruction string, lineNumber int, outputFile *string) {
+
+	/************B TYPE INSTRUCTIONS****************/
+	switch binaryInstruction[:6] {
+	case "000101":
+		branchInst := parseBranchInstruction(binaryInstruction, lineNumber)
+		fmt.Printf("%.6s %.26s\t%.1d B   #%d \n",
+			branchInst.Opcode, branchInst.OffsetStr, lineNumber, branchInst.OffsetInt)
+	default:
+		/************CB TYPE INSTRUCTIONS****************/
+
+		switch binaryInstruction[:8] {
+		case "10110100":
+			cbTypeinst := parsecBranchInstruction(binaryInstruction, lineNumber)
+			output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBZ R%.1d #%.1d \n",
+				cbTypeinst.Opcode, cbTypeinst.OffsetStr, cbTypeinst.RegistryStr, lineNumber, cbTypeinst.RegistryInt,
+				cbTypeinst.OffsetInt)
+			fmt.Printf(output)
+			writeToFile(*outputFile, output)
+
+		case "10110101":
+			cbTypeinst := parsecBranchInstruction(binaryInstruction, lineNumber)
+			output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBZN R%.1d #%.1d \n",
+				cbTypeinst.Opcode, cbTypeinst.OffsetStr, cbTypeinst.RegistryStr, lineNumber, cbTypeinst.RegistryInt,
+				cbTypeinst.OffsetInt)
+			fmt.Printf(output)
+			writeToFile(*outputFile, output)
+		default:
+			/************IM TYPE INSTRUCTIONS****************/
+			switch binaryInstruction[:9] {
+			case "110100101":
+				imTypeinst := parseImTypeInstruction(binaryInstruction, lineNumber)
+				output := fmt.Sprintf("%.9s %.2s %.16s %.5s\t%.1d MOVZ R%.1d, %.1d, LSL %.1d \n",
+					imTypeinst.Opcode, imTypeinst.Op2, imTypeinst.FieldValue, imTypeinst.DestStr, lineNumber,
+					imTypeinst.Destination, imTypeinst.FieldInt, imTypeinst.BitPattern)
+				fmt.Printf(output)
+				writeToFile(*outputFile, output)
+			case "111100101":
+				imTypeinst := parseImTypeInstruction(binaryInstruction, lineNumber)
+				output := fmt.Sprintf("%.9s %.2s %.16s %.5s\t%.1d MOVK R%.1d, %.1d, LSL %.1d \n",
+					imTypeinst.Opcode, imTypeinst.Op2, imTypeinst.FieldValue, imTypeinst.DestStr, lineNumber,
+					imTypeinst.Destination, imTypeinst.FieldInt, imTypeinst.BitPattern)
+				fmt.Printf(output)
+				writeToFile(*outputFile, output)
+			default:
+				/***********I TYPE INSTRUCTIONS******************/
+
+				/***********SUBI TYPE INSTRUCTIONS******************/
+				switch binaryInstruction[:10] {
+				case "1101000100":
+					iTypeInst := parseITypeInstruction(binaryInstruction, lineNumber)
+					output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d SUBI R%.1d, R%.1d, #%.1d \n",
+						iTypeInst.Opcode, iTypeInst.Immediate, iTypeInst.Src1Str, iTypeInst.DestStr, lineNumber,
+						iTypeInst.Source1, iTypeInst.Destination, iTypeInst.ImmedInt)
+					fmt.Printf(output)
+					writeToFile(*outputFile, output)
+					/***********ADDI TYPE INSTRUCTIONS******************/
+				case "1001000100":
+					iTypeInst := parseITypeInstruction(binaryInstruction, lineNumber)
+					output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
+						iTypeInst.Opcode, iTypeInst.Immediate, iTypeInst.Src1Str, iTypeInst.DestStr, lineNumber,
+						iTypeInst.Source1, iTypeInst.Destination, iTypeInst.ImmedInt)
+					fmt.Printf(output)
+					writeToFile(*outputFile, output)
+				default:
+					/*************D TYPE INSTRUCTIONS****************/
+					switch binaryInstruction[:11] {
+					//*******STUR******//
+					case "11111000000":
+						dTypeInst := parseDTypeInstruction(binaryInstruction, lineNumber)
+						output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d STUR R%.1d, [R%.1d, #%.1d] \n",
+							dTypeInst.Opcode, dTypeInst.AddressStr, dTypeInst.Op2, dTypeInst.Src2Str,
+							dTypeInst.Src1Str, lineNumber, dTypeInst.Source2, dTypeInst.Source1, dTypeInst.AddressInt)
+						fmt.Printf(output)
+						writeToFile(*outputFile, output)
+						//*******LDUR******//
+					case "11111000010": //
+						dTypeInst := parseDTypeInstruction(binaryInstruction, lineNumber)
+						output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d LDUR R%.1d, [R%.1d, #%.1d] \n",
+							dTypeInst.Opcode, dTypeInst.AddressStr, dTypeInst.Op2, dTypeInst.Src2Str,
+							dTypeInst.Src1Str, lineNumber, dTypeInst.Source2, dTypeInst.Source1, dTypeInst.AddressInt)
+						fmt.Printf(output)
+						writeToFile(*outputFile, output)
+						/*******************RTYPE INSTRUCTIONS******************/
+					default:
+						switch binaryInstruction[:11] {
+						//*******ADD******//
+						case "10001011000":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d ADD R%.1d, R%.1d, R%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+							//*******AND******//
+						case "10001010000":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d AND R%.1d, R%.1d, R%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+							//*******ORR******//
+						case "10101010000":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR R%.1d, R%.1d, R%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+							//****************SUB***************//
+						case "11001011000":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d SUB R%.1d, R%.1d, R%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+							//***************EOR****************//
+						case "11101010000":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d EOR R%.1d, R%.1d, R%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+							//***********ASR*****************//
+						case "11010011100":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d ASR R%.1d, R%.1d, #%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.ShamtInt)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+							//**************LSL******************//
+						case "11010011011":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d LSL R%.1d, R%.1d, #%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.ShamtInt)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+							//**************LSR*******************//
+						case "11010011010":
+							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
+							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d LSR R%.1d, R%.1d, #%.1d \n",
+								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
+								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.ShamtInt)
+							fmt.Printf(output)
+							writeToFile(*outputFile, output)
+						default:
+							switch binaryInstruction[:32] {
+							case "11111110110111101111111111100111":
+								output := fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.5s \t%.1d BREAK \n",
+									binaryInstruction[:8], binaryInstruction[8:11], binaryInstruction[11:16], binaryInstruction[16:21],
+									binaryInstruction[21:26], binaryInstruction[26:32], lineNumber)
+								fmt.Printf(output)
+								writeToFile(*outputFile, output)
+							case "00000000000000000000000000000000":
+								output := fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.5s \t%.1d NOP \n",
+									binaryInstruction[:8], binaryInstruction[8:11], binaryInstruction[11:16], binaryInstruction[16:21],
+									binaryInstruction[21:26], binaryInstruction[26:32], lineNumber)
+								fmt.Printf(output)
+								writeToFile(*outputFile, output)
+							default:
+								calc, err := twosComplement(binaryInstruction)
+								if err != nil {
+									println(calc)
+								}
+								println(calc)
+							}
+						}
+					}
+				}
+
+			}
+		}
+	}
+}
 
 /*********************************************************/
 /*********************************************************/
@@ -54,30 +484,23 @@ func twosComplement(binaryStr string) (int, error) {
 			inverted += "0"
 		}
 	}
-
 	// Trim leading zeros
 	binaryStr = strings.TrimLeft(inverted, "0")
-
 	result := ""
-
 	// Carry for addition
 	carry := 1
-
 	// Work through string from right to left
 	for i := len(binaryStr) - 1; i >= 0; i-- {
 		bit := int(binaryStr[i] - '0')
 		sum := bit + carry
-
 		// Update result and carry
 		result = strconv.Itoa(sum%2) + result
 		carry = sum / 2
 	}
-
 	// Add leftover carry to left
 	if carry == 1 {
 		result = "1" + result
 	}
-
 	// Add zeroes to return to original length
 	for len(result) < len(binaryStr) {
 		result = "0" + result
@@ -101,709 +524,6 @@ func binaryToInteger(binary string) (int, error) {
 	return int(result), nil
 }
 
-/*********************************************************/
-/*********************************************************/
-/*********      WRITE TO FILE FUNCTION      **************/
-/*********************************************************/
-/*********************************************************/
-func writeToFile(outputFile string, output string) {
-	writeOutputFile, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-
-		}
-	}(writeOutputFile)
-	_, err = writeOutputFile.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
-}
-
-/*********************************************************/
-/*********************************************************/
-/*******      INSTRUCTION-TYPE FUNCTIONS      ************/
-/***************    ALPHABETICALLY    ********************/
-/*********************************************************/
-
-/*****************ADD IMMEDIATE FUNCTION*********************/
-/*func addImmediate(binaryInstruction string, lineNumber int) {
-	instructionType := binaryInstruction[0:11]
-	immediateValue := binaryInstruction[11:22]
-	registrySource := binaryInstruction[22:27]
-	registryDest := binaryInstruction[27:32]
-	immediateValueInt, err := twosComplement(immediateValue)
-	if error == nil {
-		fmt.Println("Error:", err)
-	}
-
-}
-*/
-/*****************ADD FUNCTION*********************/
-func addInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	instructionType := binaryInstruction[0:11]
-	firstSource := binaryInstruction[11:16]
-	valueShamt := binaryInstruction[16:22]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	secondSource := binaryInstruction[22:27]
-	// Reg Two Int Conversion
-	secondSourceint, err := binaryToInteger(secondSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	destinationReg := binaryInstruction[27:32]
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d  ADD R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	//fmt.Printf("%s %5s %.6s %.5s %.5s \n",
-	//firstSource, binaryInstruction, firstSource, firstSource, firstSource)
-	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	*/
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  ADD R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	writeToFile(*outputFile, output)
-
-}
-
-/***************ADDI FUNCTION***********************/
-
-func addiInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	firstSource := binaryInstruction[22:27]
-	destinationReg := binaryInstruction[27:32]
-	instructionType := binaryInstruction[0:10]
-	immediateBinary := binaryInstruction[10:22]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// immediate value Int Conversion
-	immediateInt, err := twosComplement(immediateBinary)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
-		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
-		destInt, firstSourceint, immediateInt)
-	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
-		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
-		destInt, firstSourceint, immediateInt)
-	writeToFile(*outputFile, output)
-}
-
-/***************AND FUNCTION*******************/
-func andInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	firstSource := binaryInstruction[11:16]
-	instructionType := binaryInstruction[0:11]
-	valueShamt := binaryInstruction[16:22]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	secondSource := binaryInstruction[22:27]
-	// Reg Two Int Conversion
-	secondSourceint, err := binaryToInteger(secondSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	destinationReg := binaryInstruction[27:32]
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d AND R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d AND R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	writeToFile(*outputFile, output)
-
-}
-
-/********************ASR FUNCTION******************************/
-func arithShiftFunction(binaryInstruction string, lineNumber int, outputFile *string) {
-	instructionType := binaryInstruction[0:11]
-	firstSource := binaryInstruction[22:27]
-	secondSource := binaryInstruction[11:16]
-	destinationReg := binaryInstruction[27:32]
-	valueShamt := binaryInstruction[16:22]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	shamtInt, err := binaryToInteger(valueShamt)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d  ASR R%.1d, R%.1d, #%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, shamtInt)
-	//fmt.Printf("%s %5s %.6s %.5s %.5s \n",
-	//firstSource, binaryInstruction, firstSource, firstSource, firstSource)
-	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	*/
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  ASR R%.1d, R%.1d, #%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, shamtInt)
-	writeToFile(*outputFile, output)
-
-}
-
-/********************BRANCH INSTRUCTION************************/
-func branchInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	instructionType := binaryInstruction[0:6]
-	bOffset := binaryInstruction[6:32]
-	bOffsetInt, err := twosComplement(bOffset)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.6s %.26s\t%.1d B   #%d \n",
-		instructionType, bOffset, lineNumber, bOffsetInt)
-
-	//fmt.Println(instructionType, bOffset, lineNumber, "B", "#", bOffsetInt)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.6s %.26s\t%.1d B   #%d \n",
-		instructionType, bOffset, lineNumber, bOffsetInt)
-	writeToFile(*outputFile, output)
-}
-
-/*******************CONDITIONAL BRANCH NZERO**********************/
-func conditionalBranchNz(binaryInstruction string, lineNumber int, outputFile *string) {
-	instructionType := binaryInstruction[0:8]
-	branchOffset := binaryInstruction[8:27]
-	bRegistry := binaryInstruction[27:32]
-	branchOffsetInt, err := twosComplement(branchOffset)
-	bRegistryInt, err := binaryToInteger(bRegistry)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.8s %.19s %.5s\t%.1d  CBNZ R%.1d #%.1d \n",
-		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt) // ***WRITING TO FILE***
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBNZ R%.1d #%.1d \n",
-		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
-	writeToFile(*outputFile, output)
-}
-
-/*******************CONDITIONAL BRANCH ZERO**********************/
-func conditionalBranch(binaryInstruction string, lineNumber int, outputFile *string) {
-	instructionType := binaryInstruction[0:8]
-	branchOffset := binaryInstruction[8:27]
-	bRegistry := binaryInstruction[27:32]
-	bRegistryInt, err := binaryToInteger(bRegistry)
-	branchOffsetInt, err := twosComplement(branchOffset)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.8s %.19s %.5s\t%.1d  CBZ R%.1d #%.1d \n",
-		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
-	// fmt.Println(instructionType, branchOffset, bRegistry, lineNumber, "CBZ", "R", bRegistryInt, "#", branchOffsetInt)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBZ R%.1d #%.1d \n",
-		instructionType, branchOffset, bRegistry, lineNumber, bRegistryInt, branchOffsetInt)
-	writeToFile(*outputFile, output)
-}
-
-/*****************EOR FUNCTION*********************/
-func eorInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	firstSource := binaryInstruction[22:27]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	secondSource := binaryInstruction[11:16]
-	// Reg Two Int Conversion
-	secondSourceint, err := binaryToInteger(secondSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	destinationReg := binaryInstruction[27:32]
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	instructionType := binaryInstruction[0:11]
-	valueShamt := binaryInstruction[16:22]
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d EOR R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	//	"\t", destinationReg, lineNumber, "ORR ", " R", destInt, "R", firstSourceint, "R", secondSourceint)
-	// binaryInstruction = ""    Maybe not needed now
-	// fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR  R%.1d, R%.1d, R%.1d \n",
-	//	instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-	//		destInt, firstSourceint, secondSourceint)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	writeToFile(*outputFile, output)
-}
-
-/******************LDUR FUNCTION*******************/
-func ldurInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	offsetValue := binaryInstruction[11:20]
-	opCode2 := binaryInstruction[20:22]
-	instructionType := binaryInstruction[0:11]
-	baseRegistryRn := binaryInstruction[22:27]
-	destinationRegRt := binaryInstruction[27:32]
-	// Reg One Int Conversion
-	baseRegistryRnint, err := binaryToInteger(baseRegistryRn)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	destinationRegRtint, err := binaryToInteger(destinationRegRt)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	offsetValueInt, err := binaryToInteger(offsetValue)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.9s %.2s %.5s %.5s \t%.1d LDUR R%.1d, [R%.1d, #%.1d] \n",
-		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
-		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d  LDUR R%.1d, [R%.1d, #%.1d] \n",
-		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
-		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-	writeToFile(*outputFile, output)
-
-}
-
-/******************LSL FUNCTION********************/
-func logicalLeftInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	instructionType := binaryInstruction[0:11]
-	firstSource := binaryInstruction[22:27]
-	secondSource := binaryInstruction[11:16]
-	destinationReg := binaryInstruction[27:32]
-	valueShamt := binaryInstruction[16:22]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	shamtInt, err := binaryToInteger(valueShamt)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSL R%.1d, R%.1d, #%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, shamtInt)
-	//fmt.Printf("%s %5s %.6s %.5s %.5s \n",
-	//firstSource, binaryInstruction, firstSource, firstSource, firstSource)
-	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	*/
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSL R%.1d, R%.1d, #%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, shamtInt)
-	writeToFile(*outputFile, output)
-
-}
-
-/******************LSR FUNCTION********************/
-func logicalRightInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	instructionType := binaryInstruction[0:11]
-	firstSource := binaryInstruction[22:27]
-	secondSource := binaryInstruction[11:16]
-	destinationReg := binaryInstruction[27:32]
-	valueShamt := binaryInstruction[16:22]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	shamtInt, err := binaryToInteger(valueShamt)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSR R%.1d, R%.1d, #%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, shamtInt)
-	//fmt.Printf("%s %5s %.6s %.5s %.5s \n",
-	//firstSource, binaryInstruction, firstSource, firstSource, firstSource)
-	/*fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	"\t", destinationReg, lineNumber, " ADD \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	*/
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d  LSR R%.1d, R%.1d, #%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, shamtInt)
-	writeToFile(*outputFile, output)
-}
-
-/*****************MOVK FUNCTION********************/
-
-func movkInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	fieldValue := binaryInstruction[11:27]
-	opCode2 := binaryInstruction[9:11]
-	instructionType := binaryInstruction[0:9]
-	baseRegistry := binaryInstruction[27:32]
-	// Reg Int Conversion
-	baseRegistryint, err := binaryToInteger(baseRegistry)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	/*opcode2int, err := binaryToInteger(opCode2)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}*/
-	//Field Value Conversion
-	fieldValueInt, err := binaryToInteger(fieldValue)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	bitPattern := 0
-	if opCode2 == "00" {
-		bitPattern = 0
-	} else if opCode2 == "01" {
-		bitPattern = 16
-	} else if opCode2 == "10" {
-		bitPattern = 32
-	} else if opCode2 == "11" {
-		bitPattern = 48
-	}
-	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d \n",
-		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
-		baseRegistryint, fieldValueInt, bitPattern)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d] \n",
-		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
-		baseRegistryint, fieldValueInt, bitPattern)
-	writeToFile(*outputFile, output)
-}
-
-/*****************MOVR FUNCTION********************/
-
-func movrInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	fieldValue := binaryInstruction[11:27]
-	opCode2 := binaryInstruction[9:11]
-	instructionType := binaryInstruction[0:9]
-	baseRegistry := binaryInstruction[27:32]
-	// Reg Int Conversion
-	baseRegistryint, err := binaryToInteger(baseRegistry)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	//opcode2int, err := binaryToInteger(opCode2)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	//Field Value Conversion
-	// var fieldValueInt uint32
-	fieldValueInt, err := binaryToInteger(fieldValue)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	bitPattern := 0
-	if opCode2 == "00" {
-		bitPattern = 0
-	} else if opCode2 == "01" {
-		bitPattern = 16
-	} else if opCode2 == "10" {
-		bitPattern = 32
-	} else if opCode2 == "11" {
-		bitPattern = 48
-	}
-	fmt.Printf("%.9s %.2s %.16s %.5s \t%.1d MOVR R%.1d, %.1d, LSL %.1d",
-		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
-		baseRegistryint, fieldValueInt, bitPattern)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.9s %.2s %.16s %.5s \t%.1d MOVK R%.1d, %.1d, LSL %.1d] \n",
-		instructionType, opCode2, fieldValue, baseRegistry, lineNumber,
-		baseRegistryint, fieldValueInt, bitPattern)
-	writeToFile(*outputFile, output)
-
-}
-
-/*****************ORR FUNCTION*********************/
-func orrInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	firstSource := binaryInstruction[11:16]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	secondSource := binaryInstruction[22:27]
-	// Reg Two Int Conversion
-	secondSourceint, err := binaryToInteger(secondSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	destinationReg := binaryInstruction[27:32]
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	instructionType := binaryInstruction[0:11]
-	valueShamt := binaryInstruction[16:22]
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	//	"\t", destinationReg, lineNumber, "ORR ", " R", destInt, "R", firstSourceint, "R", secondSourceint)
-	// binaryInstruction = ""    Maybe not needed now
-	// fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR  R%.1d, R%.1d, R%.1d \n",
-	//	instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-	//		destInt, firstSourceint, secondSourceint)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d ORR R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	writeToFile(*outputFile, output)
-}
-
-/*****************STUR FUNCTION****************/
-
-func sturInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	offsetValue := binaryInstruction[11:20]
-	opCode2 := binaryInstruction[20:22]
-	instructionType := binaryInstruction[0:11]
-	baseRegistryRn := binaryInstruction[22:27]
-	destinationRegRt := binaryInstruction[27:32]
-	// Reg One Int Conversion
-	baseRegistryRnint, err := binaryToInteger(baseRegistryRn)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	destinationRegRtint, err := binaryToInteger(destinationRegRt)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	offsetValueInt, err := binaryToInteger(offsetValue)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.9s %.2s %.5s %.5s \t%.1d STUR R%.1d, [R%.1d, #%.1d] \n",
-		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
-		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s \t%.1d  LDUR R%.1d, [R%.1d, #%.1d] \n",
-		instructionType, offsetValue, opCode2, baseRegistryRn, destinationRegRt, lineNumber,
-		destinationRegRtint, baseRegistryRnint, offsetValueInt)
-	writeToFile(*outputFile, output)
-
-}
-
-/******************SUB FUNCTION****************/
-func subInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	firstSource := binaryInstruction[11:16]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	secondSource := binaryInstruction[22:27]
-	// Reg Two Int Conversion
-	secondSourceint, err := binaryToInteger(secondSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	destinationReg := binaryInstruction[27:32]
-	instructionType := binaryInstruction[0:11]
-	valueShamt := binaryInstruction[16:22]
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.11s %.5s %.6s %.5s %.5s \t%.1d SUB R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	//fmt.Println(instructionType, "\t", firstSource, "\t", valueShamt, secondSource,
-	//	"\t", destinationReg, lineNumber, "SUB \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s \t%.1d SUB R%.1d, R%.1d, R%.1d \n",
-		instructionType, firstSource, valueShamt, secondSource, destinationReg, lineNumber,
-		destInt, firstSourceint, secondSourceint)
-	writeToFile(*outputFile, output)
-
-}
-
-/******************SUBI FUNCTION********************/
-
-func subiInstruction(binaryInstruction string, lineNumber int, outputFile *string) {
-	firstSource := binaryInstruction[22:27]
-	destinationReg := binaryInstruction[27:32]
-	instructionType := binaryInstruction[0:10]
-	immediateBinary := binaryInstruction[10:22]
-	// Reg One Int Conversion
-	firstSourceint, err := binaryToInteger(firstSource)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Two Int Conversion
-	immediateInt, err := binaryToInteger(immediateBinary)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	// Reg Three Int Conversion
-	destInt, err := binaryToInteger(destinationReg)
-	if err != nil {
-		fmt.Println("Error:", err)
-	}
-	fmt.Printf("%.10s %.12s %.5s %.5s \t%.1d SUBI R%.1d, R%.1d, #%.1d \n",
-		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
-		destInt, firstSourceint, immediateInt)
-	//fmt.Println(binaryInstruction[0:11], "\t", firstSource, "\t", binaryInstruction[16:22], secondSource,
-	//	"\t", destinationReg, lineNumber, "AND \t", "R", destInt, "R", firstSourceint, "R", secondSourceint)
-	// binaryInstruction = ""    Maybe not needed now
-
-	// Write the text to the file
-	output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d SUBI R%.1d, R%.1d, #%.1d \n",
-		instructionType, immediateBinary, firstSource, destinationReg, lineNumber,
-		destInt, firstSourceint, immediateInt)
-	writeToFile(*outputFile, output)
-}
-
-/*******************************************************************/
-/***********PRIMARY FUNCTION TO READ IN INSTRUCTIONS***************/
-/******************************************************************/
-
-func readAndProcessInstructions(binaryInstruction string, lineNumber int, outputFile *string) {
-	// Check if it matches any known instruction type
-	switch binaryInstruction[:6] {
-	case "000101":
-		branchInstruction(binaryInstruction, lineNumber, outputFile)
-	default:
-		switch binaryInstruction[:8] {
-		case "10110100":
-			conditionalBranch(binaryInstruction, lineNumber, outputFile)
-		case "10110101":
-			conditionalBranchNz(binaryInstruction, lineNumber, outputFile)
-		default:
-			switch binaryInstruction[:9] {
-			case "110100101":
-				movrInstruction(binaryInstruction, lineNumber, outputFile)
-			case "111100101":
-				movkInstruction(binaryInstruction, lineNumber, outputFile)
-			default:
-				switch binaryInstruction[:10] {
-				case "1101000100":
-					subiInstruction(binaryInstruction, lineNumber, outputFile)
-				case "1001000100":
-					addiInstruction(binaryInstruction, lineNumber, outputFile)
-				default:
-					switch binaryInstruction[:11] {
-					case "10001011000":
-						addInstruction(binaryInstruction, lineNumber, outputFile)
-					case "10001010000":
-						andInstruction(binaryInstruction, lineNumber, outputFile)
-					case "10101010000":
-						orrInstruction(binaryInstruction, lineNumber, outputFile)
-					case "11001011000":
-						subInstruction(binaryInstruction, lineNumber, outputFile)
-					case "11111000000":
-						sturInstruction(binaryInstruction, lineNumber, outputFile)
-					case "11111000010":
-						ldurInstruction(binaryInstruction, lineNumber, outputFile)
-					case "11101010000":
-						eorInstruction(binaryInstruction, lineNumber, outputFile)
-					case "11010011100":
-						arithShiftFunction(binaryInstruction, lineNumber, outputFile)
-					case "11010011011":
-						logicalLeftInstruction(binaryInstruction, lineNumber, outputFile)
-					case "11010011010":
-						logicalRightInstruction(binaryInstruction, lineNumber, outputFile)
-					default:
-						calc, err := twosComplement(binaryInstruction)
-						if err != nil {
-							println(calc)
-						}
-						println(calc)
-						//NEED BREAK CASE
-					}
-				}
-			}
-		}
-	}
-}
-
 /************   MAIN   ****************/
 
 func main() {
@@ -824,7 +544,6 @@ func main() {
 	defer func(inputFile *os.File) {
 		err := inputFile.Close()
 		if err != nil {
-
 		}
 	}(openInputFile)
 
