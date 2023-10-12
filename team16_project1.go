@@ -443,10 +443,11 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int, output
 								writeToFile(*outputFile, output)
 							default:
 								calc, err := twosComplement(binaryInstruction)
+								calcString := strconv.Itoa(calc)
 								if err != nil {
-									println(calc)
+									writeToFile(*outputFile, calcString)
 								}
-								println(calc)
+								writeToFile(*outputFile, calcString)
 							}
 						}
 					}
