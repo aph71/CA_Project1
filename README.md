@@ -1,2 +1,2 @@
-# CA_Project1
+# Team016_Project1
 Repo for Computer Architecture Project 1
