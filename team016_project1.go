@@ -291,7 +291,7 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int, output
 		switch binaryInstruction[:8] {
 		case "10110100":
 			cbTypeinst := parsecBranchInstruction(binaryInstruction, lineNumber)
-			output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d CBZ R%.1d #%.1d \n",
+			output := fmt.Sprintf("%.8s %.19s %.5s\t\t%.1d CBZ R%.1d #%.1d \n",
 				cbTypeinst.Opcode, cbTypeinst.OffsetStr, cbTypeinst.RegistryStr, lineNumber, cbTypeinst.RegistryInt,
 				cbTypeinst.OffsetInt)
 			fmt.Printf(output)
