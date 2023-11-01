@@ -157,7 +157,7 @@ func parseITypeInstruction(binaryInstruction string, lineNumber int) *iTypeInstr
 	destStr := binaryInstruction[27:32]
 	dest, _ := strconv.ParseInt(destStr, 2, 32)
 	src1, _ := strconv.ParseInt(src1Str, 2, 32)
-	immedInt, _ := twosComplement(immediate)
+	immedInt, _ := strconv.ParseInt(immediate, 2, 32)
 	return NewITypeInstruction(opcode, immediate, src1Str, destStr, int(dest), int(src1), int(immedInt), lineNumber)
 }
 
@@ -249,80 +249,57 @@ func parseDTypeInstruction(binaryInstruction string, lineNumber int) *dTypeInstr
 }
 
 /*********************************************************/
-/***********      WRITE       FUNCTIONS    ****************/
-/*********************************************************/
-func writeToFile(outputFile string, output string) {
-	writeOutputFile, err := os.OpenFile(outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
-		fmt.Println("Error creating the file:", err)
-		return
-	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-
-		}
-	}(writeOutputFile)
-	_, err = writeOutputFile.WriteString(output)
-	if err != nil {
-		fmt.Println("Error writing to the file:", err)
-		// file.Close()
-		return
-	}
-}
-
-/*********************************************************/
 /*********************************************************/
 /***********      MAIN DRIVER FUNCTION   ****************/
 /*********************************************************/
 /*********************************************************/
 
-func readAndProcessInstructions(binaryInstruction string, lineNumber int, outputFile *string) {
+func readAndProcessInstructions(binaryInstruction string, lineNumber int, outputFile *string, output *string) {
 
 	/************B TYPE INSTRUCTIONS****************/
 	switch binaryInstruction[:6] {
 	case "000101":
 		branchInst := parseBranchInstruction(binaryInstruction, lineNumber)
-		output := fmt.Sprintf("%.6s %.26s\t\t%.1d\tB\t#%d\n",
+		*outputFile += fmt.Sprintf("%.6s %.26s\t\t%.1d\tB\t#%d\n",
 			branchInst.Opcode, branchInst.OffsetStr, lineNumber, branchInst.OffsetInt)
 		//fmt.Printf(output)
-		writeToFile(*outputFile, output)
+		//writeToFile(*outputFile, output)
 	default:
 		/************CB TYPE INSTRUCTIONS****************/
 
 		switch binaryInstruction[:8] {
 		case "10110100":
 			cbTypeinst := parsecBranchInstruction(binaryInstruction, lineNumber)
-			output := fmt.Sprintf("%.8s %.19s %.5s\t\t%.1d\tCBZ\tR%.1d, #%.1d\n",
+			*output += fmt.Sprintf("%.8s %.19s %.5s\t\t%.1d\tCBZ\tR%.1d, #%.1d\n",
 				cbTypeinst.Opcode, cbTypeinst.OffsetStr, cbTypeinst.RegistryStr, lineNumber, cbTypeinst.RegistryInt,
 				cbTypeinst.OffsetInt)
 			//fmt.Printf(output)
-			writeToFile(*outputFile, output)
+			//writeToFile(*outputFile, output)
 
 		case "10110101":
 			cbTypeinst := parsecBranchInstruction(binaryInstruction, lineNumber)
-			output := fmt.Sprintf("%.8s %.19s %.5s\t%.1d\tCBNZ\tR%.1d, #%.1d\n",
+			*output += fmt.Sprintf("%.8s %.19s %.5s\t%.1d\tCBNZ\tR%.1d, #%.1d\n",
 				cbTypeinst.Opcode, cbTypeinst.OffsetStr, cbTypeinst.RegistryStr, lineNumber, cbTypeinst.RegistryInt,
 				cbTypeinst.OffsetInt)
 			//fmt.Printf(output)
-			writeToFile(*outputFile, output)
+			//writeToFile(*outputFile, output)
 		default:
 			/************IM TYPE INSTRUCTIONS****************/
 			switch binaryInstruction[:9] {
 			case "110100101":
 				imTypeinst := parseImTypeInstruction(binaryInstruction, lineNumber)
-				output := fmt.Sprintf("%.9s %.2s %.16s %.5s\t%.1d\tMOVZ\tR%.1d, %.1d, LSL %.1d\n",
+				*output += fmt.Sprintf("%.9s %.2s %.16s %.5s\t%.1d\tMOVZ\tR%.1d, %.1d, LSL %.1d\n",
 					imTypeinst.Opcode, imTypeinst.Op2, imTypeinst.FieldValue, imTypeinst.DestStr, lineNumber,
 					imTypeinst.Destination, imTypeinst.FieldInt, imTypeinst.BitPattern)
 				//fmt.Printf(output)
-				writeToFile(*outputFile, output)
+				//writeToFile(*outputFile, output)
 			case "111100101":
 				imTypeinst := parseImTypeInstruction(binaryInstruction, lineNumber)
-				output := fmt.Sprintf("%.9s %.2s %.16s %.5s\t%.1d\tMOVK\tR%.1d, %.1d, LSL %.1d\n",
+				*output += fmt.Sprintf("%.9s %.2s %.16s %.5s\t%.1d\tMOVK\tR%.1d, %.1d, LSL %.1d\n",
 					imTypeinst.Opcode, imTypeinst.Op2, imTypeinst.FieldValue, imTypeinst.DestStr, lineNumber,
 					imTypeinst.Destination, imTypeinst.FieldInt, imTypeinst.BitPattern)
 				//fmt.Printf(output)
-				writeToFile(*outputFile, output)
+				//writeToFile(*outputFile, output)
 			default:
 				/***********I TYPE INSTRUCTIONS******************/
 
@@ -330,129 +307,129 @@ func readAndProcessInstructions(binaryInstruction string, lineNumber int, output
 				switch binaryInstruction[:10] {
 				case "1101000100":
 					iTypeInst := parseITypeInstruction(binaryInstruction, lineNumber)
-					output := fmt.Sprintf("%.10s %.12s %.5s %.5s\t\t%.1d\tSUBI\tR%.1d, R%.1d, #%.1d\n",
+					*output += fmt.Sprintf("%.10s %.12s %.5s %.5s\t\t%.1d\tSUBI\tR%.1d, R%.1d, #%.1d\n",
 						iTypeInst.Opcode, iTypeInst.Immediate, iTypeInst.Src1Str, iTypeInst.DestStr, lineNumber,
 						iTypeInst.Destination, iTypeInst.Source1, iTypeInst.ImmedInt)
 					//fmt.Printf(output)
-					writeToFile(*outputFile, output)
+					//writeToFile(*outputFile, output)
 					/***********ADDI TYPE INSTRUCTIONS******************/
 				case "1001000100":
 					iTypeInst := parseITypeInstruction(binaryInstruction, lineNumber)
-					output := fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
+					*output += fmt.Sprintf("%.10s %.12s %.5s %.5s \t%.1d ADDI R%.1d, R%.1d, #%.1d \n",
 						iTypeInst.Opcode, iTypeInst.Immediate, iTypeInst.Src1Str, iTypeInst.DestStr, lineNumber,
 						iTypeInst.Source1, iTypeInst.Destination, iTypeInst.ImmedInt)
 					//fmt.Printf(output)
-					writeToFile(*outputFile, output)
+					//writeToFile(*outputFile, output)
 				default:
 					/*************D TYPE INSTRUCTIONS****************/
 					switch binaryInstruction[:11] {
 					//*******STUR******//
 					case "11111000000":
 						dTypeInst := parseDTypeInstruction(binaryInstruction, lineNumber)
-						output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s\t%.1d\tSTUR\tR%.1d, [R%.1d, #%.1d]\n",
+						*output += fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s\t%.1d\tSTUR\tR%.1d, [R%.1d, #%.1d]\n",
 							dTypeInst.Opcode, dTypeInst.AddressStr, dTypeInst.Op2, dTypeInst.Src2Str,
 							dTypeInst.Src1Str, lineNumber, dTypeInst.Source1, dTypeInst.Source2, dTypeInst.AddressInt)
 						//fmt.Printf(output)
-						writeToFile(*outputFile, output)
+						//writeToFile(*outputFile, output)
 						//*******LDUR******//
 					case "11111000010": //
 						dTypeInst := parseDTypeInstruction(binaryInstruction, lineNumber)
-						output := fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s\t%.1d\tLDUR\tR%.1d, [R%.1d, #%.1d]\n",
+						*output += fmt.Sprintf("%.11s %.9s %.2s %.5s %.5s\t%.1d\tLDUR\tR%.1d, [R%.1d, #%.1d]\n",
 							dTypeInst.Opcode, dTypeInst.AddressStr, dTypeInst.Op2, dTypeInst.Src2Str,
 							dTypeInst.Src1Str, lineNumber, dTypeInst.Source1, dTypeInst.Source2, dTypeInst.AddressInt)
 						//fmt.Printf(output)
-						writeToFile(*outputFile, output)
+						//writeToFile(*outputFile, output)
 						/*******************RTYPE INSTRUCTIONS******************/
 					default:
 						switch binaryInstruction[:11] {
 						//*******ADD******//
 						case "10001011000":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tADD\tR%.1d, R%.1d, R%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tADD\tR%.1d, R%.1d, R%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 							//*******AND******//
 						case "10001010000":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tAND\tR%.1d, R%.1d, R%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tAND\tR%.1d, R%.1d, R%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 							//*******ORR******//
 						case "10101010000":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tORR\tR%.1d, R%.1d, R%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tORR\tR%.1d, R%.1d, R%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 							//****************SUB***************//
 						case "11001011000":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tSUB\tR%.1d, R%.1d, R%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tSUB\tR%.1d, R%.1d, R%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 							//***************EOR****************//
 						case "11101010000":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tEOR\tR%.1d, R%.1d, R%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tEOR\tR%.1d, R%.1d, R%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.Source2)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 							//***********ASR*****************//
 						case "11010011100":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tASR\tR%.1d, R%.1d, #%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tASR\tR%.1d, R%.1d, #%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.ShamtInt)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 							//**************LSL******************//
 						case "11010011011":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tLSL\tR%.1d, R%.1d, #%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tLSL\tR%.1d, R%.1d, #%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.ShamtInt)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 							//**************LSR*******************//
 						case "11010011010":
 							rTypeInst := parserTypeInstruction(binaryInstruction, lineNumber)
-							output := fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tLSR\tR%.1d, R%.1d, #%.1d\n",
+							*output += fmt.Sprintf("%.11s %.5s %.6s %.5s %.5s\t%.1d\tLSR\tR%.1d, R%.1d, #%.1d\n",
 								rTypeInst.Opcode, rTypeInst.Src2Str, rTypeInst.Shamt, rTypeInst.Src1Str, rTypeInst.DestStr, lineNumber,
 								rTypeInst.Destination, rTypeInst.Source1, rTypeInst.ShamtInt)
 							//fmt.Printf(output)
-							writeToFile(*outputFile, output)
+							//writeToFile(*outputFile, output)
 						default:
 							switch binaryInstruction[:32] {
 							case "11111110110111101111111111100111":
-								output := fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.6s\t%.1d\tBREAK\n",
+								*output += fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.6s\t%.1d\tBREAK\n",
 									binaryInstruction[:8], binaryInstruction[8:11], binaryInstruction[11:16], binaryInstruction[16:21],
 									binaryInstruction[21:26], binaryInstruction[26:32], lineNumber)
 								//fmt.Printf(output)
-								writeToFile(*outputFile, output)
+								//writeToFile(*outputFile, output)
 							case "00000000000000000000000000000000":
-								output := fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.6s\t%.1d\tNOP\n",
+								*output += fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.6s\t%.1d\tNOP\n",
 									binaryInstruction[:8], binaryInstruction[8:11], binaryInstruction[11:16], binaryInstruction[16:21],
 									binaryInstruction[21:26], binaryInstruction[26:32], lineNumber)
 								//fmt.Printf(output)
-								writeToFile(*outputFile, output)
+								//writeToFile(*outputFile, output)
 							default:
 								calc, err := twosComplement(binaryInstruction)
 								calcString := strconv.Itoa(calc)
-								output := fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.5s\t%.1d\t%.5s\n",
+								*output += fmt.Sprintf("%.8s %.3s %.5s %.5s %.5s %.5s\t%.1d\t%.5s\n",
 									binaryInstruction[:8], binaryInstruction[8:11], binaryInstruction[11:16], binaryInstruction[16:21],
 									binaryInstruction[21:26], binaryInstruction[26:32], lineNumber, calcString)
 								if err != nil {
 								}
 								//fmt.Printf(output)
-								writeToFile(*outputFile, output)
+								//writeToFile(*outputFile, output)
 							}
 						}
 					}
@@ -537,8 +514,8 @@ func main() {
 	inputFile := flag.String("i", "input.txt", "Enter input file")
 
 	// String flag with default value "team16_out_dis.txt"
-	outputFile := flag.String("o", "team16_out_dis.txt", "Enter desired name for the output file")
-
+	outputFile := flag.String("o", "team16_out", "Enter desired name for the output file")
+	*outputFile += "_dis.txt"
 	// Enable command-line parsing
 	flag.Parse()
 
@@ -555,8 +532,23 @@ func main() {
 
 	// Create a reader to read from the input file
 	reader := bufio.NewReader(openInputFile)
+	//EDITED FROM WRITE TO FILE FUNCTION
+
+	writeOutputFile, err := os.OpenFile(*outputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error creating the file:", err)
+		return
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(writeOutputFile)
 	lineNumber := 96
+	output := ""
 	for {
+
 		// Create a new buffer for each loop
 		buffer := make([]byte, 32)
 		// Read 32 characters into new buffer
@@ -588,8 +580,19 @@ func main() {
 		}
 		// Convert  to string
 		binaryInstruction := string(buffer[:bytesRead])
-		readAndProcessInstructions(binaryInstruction, lineNumber, outputFile)
+		readAndProcessInstructions(binaryInstruction, lineNumber, outputFile, &output)
 		lineNumber += 4
+	}
+	//writing to file
+	_, err = writeOutputFile.WriteString(output)
+	if err != nil {
+		fmt.Println("Error writing to the file:", err)
+		// file.Close()
+		return
+	}
+	err = writeOutputFile.Close()
+	if err != nil {
+		return
 	}
 
 }
